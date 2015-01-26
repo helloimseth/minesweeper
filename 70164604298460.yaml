@@ -478,7 +478,7 @@ board:
                                                                                     - 4
                                                                                     - 5
                                                                                     board: *1
-                                                                                    revealed: false
+                                                                                    revealed: true
                                                                                     neighbors:
                                                                                     - *35
                                                                                     - *37

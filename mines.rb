@@ -2,7 +2,7 @@ require 'terminfo'
 require 'yaml'
 
 class Board
-  attr_reader :board, :num_bombs, :height, :width, :loss; :date
+  attr_reader :board, :num_bombs, :height, :width, :loss, :date
 
   def initialize(height = 9, width = 9, num_bombs = 10)
     @height = height
@@ -209,8 +209,8 @@ class Game
   end
 
   def self.display_saves(saves)
-    saves.each_with_index do |save, index|
-      puts "#{index}. #{save.date}"
+    saves.each_with_index do |filename, index|
+      puts "#{index}. #{filename}"
     end
   end
 
@@ -219,17 +219,36 @@ class Game
     puts "Do you want to load a game? y/n"
     input = gets.chomp
     if input.upcase == "Y"
-      display_saves(load_saves)
+      pick_load
     else
       Game.new.play
     end
+  end
+
+  def self.pick_load
+    display_header
+
+    saves = load_saves
+    display_saves(saves)
+
+    print "Enter the number of the save you would like to load:  "
+    index = Integer(gets.chomp)
+
+    board = YAML::load(saves[index])
+
+    saves.delete(index)
+    File.open("saves.txt", "w") do |file|
+      saves.each { |savename| file.puts savename }
+    end
+
+    Game.new(board).play
   end
 
   def self.load_saves
     saves = []
     yaml_files = File.readlines('saves.txt').map(&:chomp)
     yaml_files.each do |filename|
-      saves << YAML::load(filename)
+      saves << filename
     end
     saves
   end
@@ -237,10 +256,26 @@ class Game
   def play
     until @board.game_over?
       display_board
-      @board.parse_input(get_input)
+      input = get_input
+      if input.downcase == "quit"
+        save_game
+        break
+      else
+        @board.parse_input(input)
+      end
     end
 
-    display_outcome
+    display_outcome if @board.game_over?
+  end
+
+  def save_game
+    filename = "#{@board.date}.yaml"
+    File.open(filename, "w") do |file|
+      file.puts @board.to_yaml
+    end
+    File.open("saves.txt", "a") do |file|
+      file.puts filename
+    end
   end
 
   def display_board
