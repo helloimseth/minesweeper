@@ -25,12 +25,20 @@ class Board
     puts render
   end
 
-  def pass_input_to_tile
-    #could call reveal
+  def parse_input(string)
+    args = string.split(" ")
+    pos = args.select {|val| /[0-9]/ =~ val}
+    args.delete(pos)
+    call = args.first.to_sym
+    y, x = parse_pos(pos)
+
+    call == :flag ? self[y, x].flag : self[y, x].reveal
+    display
   end
 
-  def reveal_board_on_game_over
-
+  def parse_pos(pos)
+    coords = pos.first.split("").sort
+    [(coords[1].upcase.ord - 65), coords[0].to_i]
   end
 
   def trigger_loss
