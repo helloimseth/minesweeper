@@ -4,15 +4,16 @@ class Board
   def initialize(height = 9, width = 9, num_bombs = 10)
     make_empty_board(height, width)
     add_bombs(num_bombs)
+    shake_hands
     @num_bombs = num_bombs
   end
 
   def make_empty_board(height, width)
     @board = Array.new(height) { Array.new(width) }
 
-    @board.each_with_index do |row, x|
-      row.each_with_index do |tile, y|
-        @board[x][y] = Tile.new([x, y], @board)
+    @board.each_with_index do |row, y|
+      row.each_with_index do |tile, x|
+        @board[y][x] = Tile.new([y, x], @board)
       end
     end
   end
@@ -28,21 +29,11 @@ class Board
   end
 
   def shake_hands
-
+    self.each_tile {|tile| tile.add_neighbors}
   end
 
   def render
 
-  end
-
-  def [](pos)
-    x, y = pos
-    @board[x][y]
-  end
-
-  def []=(pos, value)
-    x, y = pos
-    @board[x][y] = value
   end
 
   def display
@@ -57,6 +48,28 @@ class Board
 
   end
 
+  private
+
+  def each_tile(&prc)
+    @board.each do |row|
+      row.each do |tile|
+        prc.call(tile)
+      end
+    end
+  end
+
+  def [](pos)
+    y, x = pos
+    @board[y][x]
+  end
+
+  def []=(pos, value)
+    y, x = pos
+    @board[y][x] = value
+  end
+
+
+
 end
 
 
@@ -64,7 +77,13 @@ end
 class Tile
   attr_reader :neighbors, :bomb
 
-  DELTAS = []#constant of move locations
+  DELTAS = [
+    [-1, -1], [-1, 0], [-1, 1],
+
+    [0, -1],           [0, 1],
+
+    [1, -1],  [1, 0],  [1, 1] ]
+
 
   def initialize(pos, board)
     @flagged = false
