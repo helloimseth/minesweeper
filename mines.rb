@@ -10,9 +10,11 @@ class Board
 
   def render
     rendered_rows = []
-    @board.each do |row|
-      rendered_rows << row.map(&:render).join
+    @board.each_with_index do |row, index|
+      rendered_rows << [(index + 97).chr, "|", row.map(&:render)].join(" ")
     end
+    rendered_rows << [" " * 3].concat(Array.new((board.first.length), "-")).join(" ")
+    rendered_rows << [" " * 3].concat((0...board.first.length).to_a).join(" ")
     rendered_rows
   end
 
