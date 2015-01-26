@@ -1,5 +1,8 @@
+require 'terminfo'
+require 'yaml'
+
 class Board
-  attr_reader :board, :num_bombs, :height, :width
+  attr_reader :board, :num_bombs, :height, :width, :loss; :date
 
   def initialize(height = 9, width = 9, num_bombs = 10)
     @height = height
@@ -9,20 +12,33 @@ class Board
     link_tiles
     @num_bombs = num_bombs
     @loss = false
+    @date = Time.now
+  end
+
+  def game_over?
+    @loss || win?
+  end
+
+  def win?
+    self.each_tile { |tile| return false if !tile.bomb && !tile.revealed }
+    true
   end
 
   def render
     rendered_rows = []
+
     @board.each_with_index do |row, index|
       rendered_rows << [(index + 97).chr, "|", row.map{ |tile| tile.render(@loss)}].join(" ")
     end
+
     rendered_rows << [" " * 3].concat(Array.new(height, "-")).join(" ")
     rendered_rows << [" " * 3].concat((0...width).to_a).join(" ")
+
     rendered_rows
   end
 
   def display
-    puts render
+    render.each { |line| puts line.center(TermInfo.screen_size[1]) }
   end
 
   def parse_input(string)
@@ -43,7 +59,6 @@ class Board
 
   def trigger_loss
     @loss = true
-    display #may want to move this later
   end
 
   def tile(y,x)
@@ -148,11 +163,6 @@ class Tile
     end
   end
 
-  def receive_board_input
-
-  end
-
-
   def render(game_over)
     if game_over && bomb
       "B"
@@ -189,39 +199,75 @@ class Tile
     nil
   end
 
-
 end
-
-
-class Player
-
-  def initialize
-
-  end
-
-  def get_input
-  # either reveal or flag and a position
-  end
-end
-
 
 
 class Game
 
-  def initialize
+  def initialize(board = nil)
+    @board = board || Board.new
+  end
+
+  def pick_board
 
   end
 
+  def self.display_start_menu
+    display_header
+    puts "Do you want to load a game? y/n"
+    input = gets.chomp
+    if input.upcase == "Y"
+      load_saves
+    else
+      Game.new.play
+    end
+  end
+
+  def load_saves
+    saves = File.readlines("saves.yaml").map(&:chomp)
+    saves.map do |save|
+      YAML::load(save)
+    end
+  end
+
   def play
-  #get input, and handle the input
-  #we'll need an input loop to continue getting player input
+    until @board.game_over?
+      display_board
+      @board.parse_input(get_input)
+    end
+
+    display_outcome
+  end
+
+  def display_board
+    display_header
+    @board.display
+    2.times { puts "" }
+  end
+
+  def display_header
+    puts "\e[H\e[2J"
+    puts "---*~*~*~*~ MINESWEEPER ~*~*~*~*---".center(TermInfo.screen_size[1])
+    2.times { puts "" }
+  end
+
+  def get_input
+    print ("What move would you like to make:  ").rjust(38)
+    gets.chomp
+  end
+
+  def display_outcome
+    display_board
+    if @board.win?
+      puts "You win! It took #{nil} seconds..."
+    else
+      puts "Sorry, you lost and wasted #{nil} seconds..."
+    end
   end
 
 end
 
 
-
-class Load
-
-
+if __FILE__ == $PROGRAM_NAME
+  Game.display_start_menu
 end
