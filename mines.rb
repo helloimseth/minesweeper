@@ -203,6 +203,7 @@ end
 
 
 class Game
+  SAVE_FILES = 'save_files.txt'
 
   def initialize(board = nil)
     @board = board || Board.new
@@ -216,7 +217,7 @@ class Game
 
   def self.display_start_menu
     display_header
-    puts "Do you want to load a game? y/n"
+    puts "\nDo you want to load a game? y/n\n"
     input = gets.chomp
     if input.upcase == "Y"
       pick_load
@@ -233,11 +234,14 @@ class Game
 
     print "Enter the number of the save you would like to load:  "
     index = Integer(gets.chomp)
+    load_file = "#{saves[index]}"
 
-    board = YAML::load(saves[index])
+    board = YAML::load(File.read(load_file))
 
-    saves.delete(index)
-    File.open("saves.txt", "w") do |file|
+    saves.delete(load_file)
+    File.delete(load_file)
+
+    File.open(SAVE_FILES, "w") do |file|
       saves.each { |savename| file.puts savename }
     end
 
@@ -246,7 +250,7 @@ class Game
 
   def self.load_saves
     saves = []
-    yaml_files = File.readlines('saves.txt').map(&:chomp)
+    yaml_files = File.readlines(SAVE_FILES).map(&:chomp)
     yaml_files.each do |filename|
       saves << filename
     end
@@ -269,11 +273,14 @@ class Game
   end
 
   def save_game
-    filename = "#{@board.date}.yaml"
+    print "What would you like to call the save file:  "
+    game_name = gets.chomp
+
+    filename = "./saves/#{game_name}.yaml"
     File.open(filename, "w") do |file|
       file.puts @board.to_yaml
     end
-    File.open("saves.txt", "a") do |file|
+    File.open(SAVE_FILES, "a") do |file|
       file.puts filename
     end
   end
