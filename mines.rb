@@ -1,20 +1,23 @@
 class Board
-  attr_reader :board, :num_bombs
+  attr_reader :board, :num_bombs, :height, :width
 
   def initialize(height = 9, width = 9, num_bombs = 10)
+    @height = height
+    @width = width
     make_empty_board(height, width)
     add_bombs(num_bombs)
     link_tiles
     @num_bombs = num_bombs
+    @loss = false
   end
 
   def render
     rendered_rows = []
     @board.each_with_index do |row, index|
-      rendered_rows << [(index + 97).chr, "|", row.map(&:render)].join(" ")
+      rendered_rows << [(index + 97).chr, "|", row.map{ |tile| tile.render(@loss)}].join(" ")
     end
-    rendered_rows << [" " * 3].concat(Array.new((board.first.length), "-")).join(" ")
-    rendered_rows << [" " * 3].concat((0...board.first.length).to_a).join(" ")
+    rendered_rows << [" " * 3].concat(Array.new(height, "-")).join(" ")
+    rendered_rows << [" " * 3].concat((0...width).to_a).join(" ")
     rendered_rows
   end
 
@@ -30,6 +33,11 @@ class Board
 
   end
 
+  def trigger_loss
+    @loss = true
+    display #may want to move this later
+  end
+
   def tile(y,x)
     @board[y][x]
   end
@@ -42,12 +50,11 @@ class Board
     end
   end
 
-  def [](pos)
-    y, x = pos
+  def [](y,x)
     @board[y][x]
   end
 
-  def []=(pos, value)
+  def []=(pos, value) #may want to delete this later
     y, x = pos
     @board[y][x] = value
   end
@@ -57,7 +64,7 @@ class Board
 
     @board.each_with_index do |row, y|
       row.each_with_index do |tile, x|
-        @board[y][x] = Tile.new([y, x], @board)
+        @board[y][x] = Tile.new([y, x], self)
       end
     end
   end
@@ -125,10 +132,10 @@ class Tile
       current_y, current_x = @pos
       new_y, new_x = current_y + dy, current_x + dx
 
-      next unless new_y.between?(0,board.length - 1) &&
-                  new_x.between?(0,board.first.length - 1)
+      next unless new_y.between?(0, @board.height - 1) &&
+                  new_x.between?(0, @board.width  - 1)
 
-      neighbor = board[new_y][new_x]
+      neighbor = @board[new_y, new_x]
       add_neighbor(neighbor) unless @neighbors.include?(neighbor)
     end
   end
@@ -138,8 +145,10 @@ class Tile
   end
 
 
-  def render
-    if @revealed
+  def render(game_over)
+    if game_over && bomb
+      "B"
+    elsif @revealed
       @neighbor_bomb_count == 0 ? "~" : @neighbor_bomb_count
     elsif @flagged
       "F"
@@ -150,6 +159,11 @@ class Tile
 
 
   def reveal
+    if @bomb
+      @board.trigger_loss
+      return nil
+    end
+
     @revealed = true
     if @neighbor_bomb_count == 0
       @neighbors.each do |neighbor|
@@ -157,6 +171,7 @@ class Tile
         neighbor.reveal
       end
     end
+
     nil
   end
 
