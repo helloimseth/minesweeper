@@ -1,10 +1,18 @@
 class Board
 
-  def self.seed_board
+  def self.seed_board(height, width, num_bombs)
     #take optional board size and bomb number arguments
     #going to have to create tile instances that will be in the master array
     #board creates tiles
     #tiles shake hands(being passed the board)
+
+    board = Array.new(height) { Array.new(width) }
+
+    board.each_with_index do |row, x|
+      row.each_with_index do |tile, y|
+        board[x][y] = [x, y]
+      end
+    end
   end
 
   def initialize
@@ -13,6 +21,12 @@ class Board
 
   def render
 
+  end
+
+  def [](pos)
+  end
+
+  def []=(pos, value)
   end
 
   def display
@@ -34,20 +48,22 @@ end
 class Tile
   attr_reader :neighbors
 
-  DELTAS #constant of move locations
+  DELTAS = []#constant of move locations
 
-  def initialize
-    @neighbors = #store local nodes
+  def initialize(pos, board)
     @flagged = false
-    @bomb #finish this
-    @pos #finish this
-    @board #pass board
+    @bomb = false
+    @pos = pos
+    @board = board
     @revealed = false
   end
 
   def inspect
-    "Pos: #{@pos}\nBomb?: #{@bomb}\nFlagged? #{@flagged}\nRevealed? #{@revealed}\n
-    Neighbor B.C. #{neighbor_bomb_count}"
+    "Pos: #{@pos}\nBomb?: #{@bomb}\nFlagged? #{@flagged}\nRevealed? #{@revealed}\nNBC: #{neighbor_bomb_count}"
+  end
+
+  def make_bomb
+    @bomb = true
   end
 
   def add_neighbor
@@ -55,7 +71,7 @@ class Tile
   end
 
   def add_neighbors
-    #loop that does all the deltas
+    @neighbors#loop that does all the deltas
   end
 
   def receive_board_input
