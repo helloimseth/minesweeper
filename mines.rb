@@ -30,6 +30,10 @@ class Board
 
   end
 
+  def tile(y,x)
+    @board[y][x]
+  end
+
   def each_tile(&prc)
     @board.each do |row|
       row.each do |tile|
@@ -80,7 +84,7 @@ end
 
 
 class Tile
-  attr_reader :neighbors, :bomb, :neighbor_bomb_count
+  attr_reader :neighbors, :bomb, :neighbor_bomb_count, :flagged, :revealed
 
   DELTAS = [
     [-1, -1], [-1, 0], [-1, 1],
@@ -107,6 +111,10 @@ class Tile
     @bomb = true
   end
 
+  def flag
+    @flagged = !@flagged
+  end
+
   def add_neighbor(neighbor)
     @neighbors << neighbor
     neighbor.neighbors << self
@@ -129,13 +137,10 @@ class Tile
 
   end
 
-  def flag_as_bomb
-    @flagged = !@flagged
-  end
 
   def render
     if @revealed
-      @neighbor_bomb_count == 0 ? "_" : @neighbor_bomb_count
+      @neighbor_bomb_count == 0 ? "~" : @neighbor_bomb_count
     elsif @flagged
       "F"
     else
@@ -145,7 +150,14 @@ class Tile
 
 
   def reveal
-    #count local bombs
+    @revealed = true
+    if @neighbor_bomb_count == 0
+      @neighbors.each do |neighbor|
+        next if neighbor.flagged || neighbor.revealed
+        neighbor.reveal
+      end
+    end
+    nil
   end
 
   def count_neighbor_bombs
