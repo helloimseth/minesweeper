@@ -4,8 +4,46 @@ class Board
   def initialize(height = 9, width = 9, num_bombs = 10)
     make_empty_board(height, width)
     add_bombs(num_bombs)
-    shake_hands
+    link_tiles
     @num_bombs = num_bombs
+  end
+
+  def render
+    rendered_rows = []
+    @board.each do |row|
+      rendered_rows << row.map(&:render).join
+    end
+    rendered_rows
+  end
+
+  def display
+    puts render
+  end
+
+  def pass_input_to_tile
+    #could call reveal
+  end
+
+  def reveal_board_on_game_over
+
+  end
+
+  def each_tile(&prc)
+    @board.each do |row|
+      row.each do |tile|
+        prc.call(tile)
+      end
+    end
+  end
+
+  def [](pos)
+    y, x = pos
+    @board[y][x]
+  end
+
+  def []=(pos, value)
+    y, x = pos
+    @board[y][x] = value
   end
 
   def make_empty_board(height, width)
@@ -28,54 +66,19 @@ class Board
     end
   end
 
-  def shake_hands
-    self.each_tile {|tile| tile.add_neighbors}
+  def link_tiles
+    self.each_tile {|tile| tile.add_neighbors(@board)}
+    count_bombs
   end
 
-  def render
-
+  def count_bombs
+    self.each_tile(&:count_neighbor_bombs)
   end
-
-  def display
-
-  end
-
-  def pass_input_to_tile
-    #could call reveal
-  end
-
-  def reveal_board_on_game_over
-
-  end
-
-  private
-
-  def each_tile(&prc)
-    @board.each do |row|
-      row.each do |tile|
-        prc.call(tile)
-      end
-    end
-  end
-
-  def [](pos)
-    y, x = pos
-    @board[y][x]
-  end
-
-  def []=(pos, value)
-    y, x = pos
-    @board[y][x] = value
-  end
-
-
-
 end
 
 
-
 class Tile
-  attr_reader :neighbors, :bomb
+  attr_reader :neighbors, :bomb, :neighbor_bomb_count
 
   DELTAS = [
     [-1, -1], [-1, 0], [-1, 1],
@@ -91,6 +94,7 @@ class Tile
     @pos = pos
     @board = board
     @revealed = false
+    @neighbors = []
   end
 
   def inspect
@@ -101,12 +105,22 @@ class Tile
     @bomb = true
   end
 
-  def add_neighbor
-    #add a single neighbor
+  def add_neighbor(neighbor)
+    @neighbors << neighbor
+    neighbor.neighbors << self
   end
 
-  def add_neighbors
-    @neighbors#loop that does all the deltas
+  def add_neighbors(board)
+    DELTAS.each do |(dy, dx)|
+      current_y, current_x = @pos
+      new_y, new_x = current_y + dy, current_x + dx
+
+      next unless new_y.between?(0,board.length - 1) &&
+                  new_x.between?(0,board.first.length - 1)
+
+      neighbor = board[new_y][new_x]
+      add_neighbor(neighbor) unless @neighbors.include?(neighbor)
+    end
   end
 
   def receive_board_input
@@ -117,12 +131,24 @@ class Tile
     @flagged = !@flagged
   end
 
+  def render
+    if @revealed
+      @neighbor_bomb_count == 0 ? "_" : @neighbor_bomb_count
+    elsif @flagged
+      "F"
+    else
+      "*"
+    end
+  end
+
 
   def reveal
     #count local bombs
   end
 
-  def neighbor_bomb_count
+  def count_neighbor_bombs
+    @neighbor_bomb_count = 0
+    @neighbors.each {|neighbor| @neighbor_bomb_count += 1 if neighbor.bomb}
     nil
   end
 
