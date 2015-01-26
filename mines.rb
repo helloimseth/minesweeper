@@ -208,8 +208,10 @@ class Game
     @board = board || Board.new
   end
 
-  def pick_board
-
+  def self.display_saves(saves)
+    saves.each_with_index do |save, index|
+      puts "#{index}. #{save.date}"
+    end
   end
 
   def self.display_start_menu
@@ -217,17 +219,19 @@ class Game
     puts "Do you want to load a game? y/n"
     input = gets.chomp
     if input.upcase == "Y"
-      load_saves
+      display_saves(load_saves)
     else
       Game.new.play
     end
   end
 
-  def load_saves
-    saves = File.readlines("saves.yaml").map(&:chomp)
-    saves.map do |save|
-      YAML::load(save)
+  def self.load_saves
+    saves = []
+    yaml_files = File.readlines('saves.txt').map(&:chomp)
+    yaml_files.each do |filename|
+      saves << YAML::load(filename)
     end
+    saves
   end
 
   def play
@@ -240,12 +244,12 @@ class Game
   end
 
   def display_board
-    display_header
+    self.class.display_header
     @board.display
     2.times { puts "" }
   end
 
-  def display_header
+  def self.display_header
     puts "\e[H\e[2J"
     puts "---*~*~*~*~ MINESWEEPER ~*~*~*~*---".center(TermInfo.screen_size[1])
     2.times { puts "" }
