@@ -1,22 +1,34 @@
 class Board
+  attr_reader :board, :num_bombs
 
-  def self.seed_board(height, width, num_bombs)
-    #take optional board size and bomb number arguments
-    #going to have to create tile instances that will be in the master array
-    #board creates tiles
-    #tiles shake hands(being passed the board)
+  def initialize(height = 9, width = 9, num_bombs = 10)
+    make_empty_board(height, width)
+    add_bombs(num_bombs)
+    @num_bombs = num_bombs
+  end
 
-    board = Array.new(height) { Array.new(width) }
+  def make_empty_board(height, width)
+    @board = Array.new(height) { Array.new(width) }
 
-    board.each_with_index do |row, x|
+    @board.each_with_index do |row, x|
       row.each_with_index do |tile, y|
-        board[x][y] = [x, y]
+        @board[x][y] = Tile.new([x, y], @board)
       end
     end
   end
 
-  def initialize
-    @board = self.class.seed_board
+  def add_bombs(num_bombs)
+    bombs_added = 0
+    until bombs_added >= num_bombs
+      rand_row = @board.sample
+      rand_tile = rand_row.sample
+      bombs_added += 1 unless rand_tile.bomb
+      rand_tile.make_bomb
+    end
+  end
+
+  def shake_hands
+
   end
 
   def render
@@ -24,9 +36,13 @@ class Board
   end
 
   def [](pos)
+    x, y = pos
+    @board[x][y]
   end
 
   def []=(pos, value)
+    x, y = pos
+    @board[x][y] = value
   end
 
   def display
@@ -46,7 +62,7 @@ end
 
 
 class Tile
-  attr_reader :neighbors
+  attr_reader :neighbors, :bomb
 
   DELTAS = []#constant of move locations
 
